@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling","schemawizard_package","postgresdave_package","mysqldave_package","garbledave_package","sqlitedave_package"]
+
+build-backend = "hatchling.build"
+
+[project]
+name = "dbx"
+version = "1.0.0"
+dependencies = [
+  'schemawizard_package >= 2.5.1',
+  'postgresdave_package >= 1.8.0',
+  'mysqldave_package >= 1.5.0',
+  'sqlitedave_package >= 1.3.0',
+  'garbledave_package >= 1.0.0 '
+]
+authors = [
+  { name="Dave Skura", email="dskura@gmail.com" },
+]
+description = "Command line Data Profiling for Postgres, MySQL and sqlite."
+readme = "README.md"
+
+requires-python = ">=3.7"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/daveskura/dbx"
+"Author Linkedin" = "https://www.linkedin.com/in/2166883"
