@@ -13,7 +13,7 @@ def main():
 	if len(sys.argv) == 1 or sys.argv[1] == 'run.py': # no parameters
 		logging.info('')
 		logging.info('usage: ')
-		logging.info('py -m dbx.run [etl_name] ') 
+		logging.info('py -m dbx.run  ') 
 		logging.info(' ')
 		logging.info('py -m dbx.postgres_import [csv_filename] [tablename] [WithTruncate]') 
 		logging.info('py -m dbx.postgres_export [tablename] [csvfilename] [delimiter] ') 
