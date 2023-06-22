@@ -1,0 +1,6 @@
+TABLE_SCHEMA	table_count
+mysql	38
+performance_schema	111
+sys	101
+sakila	23
+world	3

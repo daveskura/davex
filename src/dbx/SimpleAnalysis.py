@@ -15,24 +15,37 @@ from schemawizard_package.schemawizard import schemawiz
 import logging
 import sys
 
-class runner():
-	def __init__(self,dbtype=''):
-		self.sqlite = sqlite_db()
-		self.db = None
-		#self.postgres = postgres_db()
-		#self.mysql = mysql_db()
+from enum import Enum
 
-		if dbtype == '':
+class dbtype(Enum):
+	nodb		= 0
+	Postgres= 1
+	MySQL		= 2
+	SQLite	= 3
+
+class runner():
+	def __init__(self,databasetype=dbtype.nodb):
+		self.sqlite = sqlite_db()
+		self.db = None # postgres_db() or mysql_db()
+
+		if databasetype == dbtype.nodb:
 			print('Which database do you want to analyze ?')
 			print('1. Postgres')
 			print('2. MySQL')
 			selectchar = input('select (1,2): ') or 'x'
 			if selectchar.upper() == '1':
-				self.db = postgres_db()
+				databasetype = dbtype.Postgres
 			elif selectchar.upper() == '2':
-				self.db = mysql_db()
+				databasetype = dbtype.MySQL
 			else:
 				sys.exit(0)
+
+		if databasetype == dbtype.Postgres:
+			self.db = postgres_db()
+		elif databasetype == dbtype.MySQL:
+			self.db = mysql_db()
+		else:
+			sys.exit(0)
 
 		self.connect()
 		query_tablecounts = """
@@ -56,16 +69,16 @@ class runner():
 
 		"""
     
-		tblcountsname = 'postgres_table_counts'
-		schemacountsname = 'postgres_schemas'
+		tblcountsname = databasetype.name.lower() + '_table_counts'
+		schemacountsname = databasetype.name.lower() + '_schemas'
 
 
 		csvtablefilename = 'tables.tsv'
 		csvschemafilename = 'schemas.tsv'
-		logging.info("Querying Postgres for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
+		logging.info("Querying " + databasetype.name + " for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
 		self.db.export_query_to_csv(query_schemacounts,csvschemafilename,'\t')
 
-		logging.info("Querying Postgres for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
+		logging.info("Querying " + databasetype.name + " for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
 		self.db.export_query_to_csv(query_tablecounts,csvtablefilename,'\t')
 
 		logging.info("Loading " + csvschemafilename + ' to local_sqlite_db') # 
