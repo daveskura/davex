@@ -9,14 +9,31 @@
 """
 from sqlitedave_package.sqlitedave import sqlite_db 
 from postgresdave_package.postgresdave import postgres_db 
+from mysqldave_package.mysqldave import mysql_db 
 from schemawizard_package.schemawizard import schemawiz
 
 import logging
+import sys
 
 class runner():
-	def __init__(self):
+	def __init__(self,dbtype=''):
 		self.sqlite = sqlite_db()
-		self.postgres = postgres_db()
+		self.db = None
+		#self.postgres = postgres_db()
+		#self.mysql = mysql_db()
+
+		if dbtype == '':
+			print('Which database do you want to analyze ?')
+			print('1. Postgres')
+			print('2. MySQL')
+			selectchar = input('select (1,2): ') or 'x'
+			if selectchar.upper() == '1':
+				self.db = postgres_db()
+			elif selectchar.upper() == '2':
+				self.db = mysql_db()
+			else:
+				sys.exit(0)
+
 		self.connect()
 		query_tablecounts = """
 			select table_schema, 
@@ -46,10 +63,10 @@ class runner():
 		csvtablefilename = 'tables.tsv'
 		csvschemafilename = 'schemas.tsv'
 		logging.info("Querying Postgres for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
-		self.postgres.export_query_to_csv(query_schemacounts,csvschemafilename,'\t')
+		self.db.export_query_to_csv(query_schemacounts,csvschemafilename,'\t')
 
 		logging.info("Querying Postgres for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
-		self.postgres.export_query_to_csv(query_tablecounts,csvtablefilename,'\t')
+		self.db.export_query_to_csv(query_tablecounts,csvtablefilename,'\t')
 
 		logging.info("Loading " + csvschemafilename + ' to local_sqlite_db') # 
 
@@ -90,14 +107,14 @@ class runner():
 
 		self.disconnect()
 	def connect(self):
-		self.postgres.connect()
-		logging.info('Connected to ' + self.postgres.db_conn_dets.dbconnectionstr())
+		self.db.connect()
+		logging.info('Connected to ' + self.db.db_conn_dets.dbconnectionstr())
 		self.sqlite.connect()
 		logging.info('Connected to ' + self.sqlite.db_conn_dets.dbconnectionstr())
 
 	def disconnect(self):
 		self.sqlite.close()
-		self.postgres.close()
+		self.db.close()
 
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)

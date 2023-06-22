@@ -25,34 +25,34 @@ def main():
 		print(' ')
 		print('x. Cancel')
 
-		selectchar = input('select (1,2,3,4,5,6,7,8,9,10,11,12): ') or 'x'
-		print('')
-		if selectchar.upper() == '1':
-			show_run()
-		elif selectchar.upper() == '2':
-			show_SimpleAnalysis()
-		elif selectchar.upper() == '3':
-			show_sqliter()
-		elif selectchar.upper() == '4':
-			show_sqlite_export()
-		elif selectchar.upper() == '5':
-			show_sqlite_import()
-		elif selectchar.upper() == '6':
-			show_sqlite_extract()
-		elif selectchar.upper() == '7':
-			show_postgres_import()
-		elif selectchar.upper() == '8':
-			show_postgres_export()
-		elif selectchar.upper() == '9':
-			show_postgres_extract()
-		elif selectchar.upper() == '10':
-			show_mysql_import()
-		elif selectchar.upper() == '11':
-			show_mysql_export()
-		elif selectchar.upper() == '12':
-			show_mysql_extract()
-		else:
-			print('Cancelled.  Do nothing.')
+		selectchar = ''
+		while selectchar != 'x':
+			selectchar = input('select (1,2,3,4,5,6,7,8,9,10,11,12): ') or 'x'
+			print('')
+			if selectchar.upper() == '1':
+				show_run()
+			elif selectchar.upper() == '2':
+				show_SimpleAnalysis()
+			elif selectchar.upper() == '3':
+				show_sqliter()
+			elif selectchar.upper() == '4':
+				show_sqlite_export()
+			elif selectchar.upper() == '5':
+				show_sqlite_import()
+			elif selectchar.upper() == '6':
+				show_sqlite_extract()
+			elif selectchar.upper() == '7':
+				show_postgres_import()
+			elif selectchar.upper() == '8':
+				show_postgres_export()
+			elif selectchar.upper() == '9':
+				show_postgres_extract()
+			elif selectchar.upper() == '10':
+				show_mysql_import()
+			elif selectchar.upper() == '11':
+				show_mysql_export()
+			elif selectchar.upper() == '12':
+				show_mysql_extract()
 
 	else: 
 		parameter = sys.argv[1]
@@ -90,11 +90,24 @@ def show_run():
 
 def show_SimpleAnalysis():
 	print('Usage: py -m dbx.SimpleAnalysis')
-	print(' - does nothing yet')
+
+	print('\nDescription:')		
+	print('Connect to Postgres')		
+	print("Query Postgres for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
+	print("\t build file schemas.tsv with counts of tables by schema")
+	print("Querying Postgres for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
+	print("\t build file tables.tsv with rowcounts by table")
+
+	print('Connect to local sqlite_db')
+	print("\t create/load table postgres_schemas from file schemas.tsv")
+	print("\t create/load table postgres_table_counts from file tables.tsv")
 
 def show_sqliter():
-	print('Usage: py -m dbx.sqliter')
-	print(' - does nothing yet')
+	print('Usage: py -m dbx.sqliter [-f sqlfilename] [SQL Statement] ')
+	print('sqliter.py -f sqlfilename ') 
+	print('sqliter.py <SELECT SQL Statement>')
+	print('sqliter.py "SELECT name FROM sqlite_master WHERE type = \'table\'"')
+	print('sqliter.py "SELECT * FROM postgres_table_counts ORDER BY row_count DESC limit 10"')
 
 def show_sqlite_export():
 	print('Usage: py -m dbx.sqlite_export [tablename] [csvfilename] [delimiter]')
@@ -141,5 +154,6 @@ def show_mysql_export():
 def show_mysql_extract():
 	print('Usage: py -m dbx.mysql_extract [query] [csvfilename] [delimiter] ')
 
-main()
+if __name__ == '__main__':
+	main()
 
