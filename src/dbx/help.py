@@ -97,37 +97,49 @@ def show_sqliter():
 	print(' - does nothing yet')
 
 def show_sqlite_export():
-	print('Usage: py -m dbx.sqlite_export')
-	print(' - does nothing yet')
+	print('Usage: py -m dbx.sqlite_export [tablename] [csvfilename] [delimiter]')
+	print("\t tablename <text>  eg 'anytablename'")
+	print("\t csvfilename <text>  eg 'anyfilename.csv'")
+	print("\t delimiter <char>  eg. '~' (tab is default)\n")
 
 def show_sqlite_import():
-	print('Usage: py -m dbx.sqlite_import')
-	print(' - does nothing yet')
+	print('Usage: py -m dbx.sqlite_import [csv_filename] [tablename] [WithTruncate]')
+	print("\t csv_filename <text> eg. 'anyfilename.csv'")
+	print("\t tablename <text> eg. 'anytablename'")
+	print('\t WithTruncate <bool> must be either True or False\n')
 
 def show_sqlite_extract():
-	print('Usage: py -m dbx.sqlite_extract')
-	print(' - does nothing yet')
+	print('Usage: py -m dbx.sqlite_extract [query] [csvfilename] [delimiter] ')
 
 def show_postgres_import():
 	print('Usage: py -m dbx.postgres_import [csv_filename] [tablename] [WithTruncate]') 
+	print("\t csv_filename <text> eg. 'anyfilename.csv'")
+	print("\t tablename <text> eg. 'anytablename'")
+	print('\t WithTruncate <bool> must be either True or False\n')
 
 def show_postgres_export():
 	print('Usage: py -m dbx.postgres_export [tablename] [csvfilename] [delimiter] ') 
+	print("\t tablename <text>  eg 'anytablename'")
+	print("\t csvfilename <text>  eg 'anyfilename.csv'")
+	print("\t delimiter <char>  eg. '~' (tab is default)\n")
 
 def show_postgres_extract():
-	print('Usage: py -m dbx.postgres_extract')
-	print(' - does nothing yet')
+	print('Usage: py -m dbx.postgres_extract [query] [csvfilename] [delimiter] ')
 
 def show_mysql_import():
 	print('Usage: py -m dbx.mysql_import [csv_filename] [tablename] [WithTruncate]') 
+	print("\t csv_filename <text> eg. 'anyfilename.csv'")
+	print("\t tablename <text> eg. 'anytablename'")
+	print('\t WithTruncate <bool> must be either True or False\n')
 
 def show_mysql_export():
 	print('Usage: py -m dbx.mysql_export [tablename] [csvfilename] [delimiter] ') 
+	print("\t tablename <text>  eg 'anytablename'")
+	print("\t csvfilename <text>  eg 'anyfilename.csv'")
+	print("\t delimiter <char>  eg. '~' (tab is default)\n")
 
 def show_mysql_extract():
-	print('Usage: py -m dbx.mysql_extract')
-	print(' - does nothing yet')
-
+	print('Usage: py -m dbx.mysql_extract [query] [csvfilename] [delimiter] ')
 
 main()
 
