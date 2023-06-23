@@ -93,14 +93,14 @@ def show_SimpleAnalysis():
 
 	print('\nDescription:')		
 	print('Connect to Postgres')		
-	print("Query Postgres for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
-	print("\t build file schemas.tsv with counts of tables by schema")
-	print("Querying Postgres for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
-	print("\t build file tables.tsv with rowcounts by table")
+	print("Query MySQL or Postgres for schema counts ") # 
+	print("\t build file <*schemas>.tsv with counts of tables by schema")
+	print("Querying MySQL or Postgres for table counts  ") # 
+	print("\t build file <*tables.tsv> with rowcounts by table")
 
-	print('Connect to local sqlite_db')
-	print("\t create/load table postgres_schemas from file schemas.tsv")
-	print("\t create/load table postgres_table_counts from file tables.tsv")
+	print('Connect to local cache)
+	print("\t create/load table <*_schemas> from file <*schemas.tsv>")
+	print("\t create/load table <*_table_counts> from file <*tables.tsv>")
 
 def show_sqliter():
 	print('Usage: py -m dbx.sqliter [-f sqlfilename] [SQL Statement] ')

@@ -24,7 +24,7 @@ class dbtype(Enum):
 	SQLite	= 3
 
 class runner():
-	def __init__(self,databasetype=dbtype.nodb):
+	def __init__(self,databasetype=dbtype.nodb,schemaname=''):
 		self.sqlite = sqlite_db()
 		self.db = None # postgres_db() or mysql_db()
 
@@ -48,40 +48,72 @@ class runner():
 			sys.exit(0)
 
 		self.connect()
-		query_tablecounts = """
-			select table_schema, 
-						 table_name, 
-						 (xpath('/row/cnt/text()', xml_count))[1]::text::int as row_count
-			from (
-				select table_name, table_schema, 
-							 query_to_xml(format('select count(*) as cnt from %I.%I', table_schema, table_name), false, true, '') as xml_count
+		if databasetype == dbtype.Postgres:
+			query_tablecounts = """
+				select table_schema, 
+							 table_name, 
+							 (xpath('/row/cnt/text()', xml_count))[1]::text::int as counts
+				from (
+					select table_name, table_schema, 
+								 query_to_xml(format('select count(*) as cnt from %I.%I', table_schema, table_name), false, true, '') as xml_count
+					from information_schema.tables
+					"""
+			if schemaname == '': 
+				query_tablecounts += "where table_schema not in ('pg_catalog','information_schema')	) t;"
+			else:
+				query_tablecounts += "where table_schema = '" + schemaname + "' ) t; "
+
+		elif databasetype == dbtype.MySQL:
+			query_tablecounts = """
+				SELECT table_schema,table_name,table_rows as counts
+				FROM information_Schema.tables
+			"""
+			if schemaname == '': 
+				query_tablecounts += " WHERE table_schema not in ('performance_schema','sys','information_schema');"
+			else:
+				query_tablecounts += " WHERE table_schema = '" + schemaname + "'; "
+
+		if databasetype == dbtype.Postgres:
+			query_schemacounts = """
+				select table_schema, count(*) as counts
 				from information_schema.tables
-				where table_schema not in ('pg_catalog','information_schema')
-			) t;
-		"""
-		query_schemacounts = """
+				"""
+			if schemaname == '': 
+				query_schemacounts += " WHERE table_schema not in ('pg_catalog','information_schema') "
+			else:
+				query_schemacounts += " WHERE table_schema = '" + schemaname + "' "
 
-			select table_schema, count(*) as table_count
-			from information_schema.tables
-			where table_schema not in ('pg_catalog','information_schema')
-			group by table_schema
+			query_schemacounts += " group by table_schema "
 
+		elif databasetype == dbtype.MySQL:
+			query_schemacounts = """
+				SELECT table_schema,count(*) as counts
+				FROM information_Schema.tables """
+			if schemaname == '': 
+				query_schemacounts += " WHERE table_schema not in ('performance_schema','sys','information_schema') "
+			else:
+				query_schemacounts += " WHERE table_schema = '" + schemaname + "' "
 
-		"""
+			query_schemacounts += " group by table_schema "
     
-		tblcountsname = databasetype.name.lower() + '_table_counts'
-		schemacountsname = databasetype.name.lower() + '_schemas'
+		tblcountsname = databasetype.name.lower() 
+		schemacountsname = databasetype.name.lower() 
+		if schemaname == '':
+			tblcountsname +=  '_table_counts'
+			schemacountsname +=  '_schemas'
+		else:
+			tblcountsname +=  '_' + schemaname + '_table_counts'
+			schemacountsname +=  '_' + schemaname
 
-
-		csvtablefilename = 'tables.tsv'
-		csvschemafilename = 'schemas.tsv'
-		logging.info("Querying " + databasetype.name + " for schema counts using query_to_xml/xpath against (information_schema.tables) ") # 
+		csvtablefilename = tblcountsname + '.tsv'
+		csvschemafilename = schemacountsname + '.tsv'
+		logging.info("Querying " + databasetype.name + " for schema counts ") # 
 		self.db.export_query_to_csv(query_schemacounts,csvschemafilename,'\t')
 
-		logging.info("Querying " + databasetype.name + " for table counts using query_to_xml/xpath against (information_schema.tables) ") # 
+		logging.info("Querying " + databasetype.name + " for table counts ") # 
 		self.db.export_query_to_csv(query_tablecounts,csvtablefilename,'\t')
 
-		logging.info("Loading " + csvschemafilename + ' to local_sqlite_db') # 
+		logging.info("Loading " + csvschemafilename + ' to local sqlite cache') # 
 
 		if self.sqlite.does_table_exist(schemacountsname):
 			logging.info('table ' + schemacountsname + ' exists.')
@@ -99,7 +131,7 @@ class runner():
 		logging.info(schemacountsname + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + schemacountsname)) + ' rows.\n') 
 
 
-		logging.info("Loading " + csvtablefilename + ' to local_sqlite_db') # 
+		logging.info("Loading " + csvtablefilename + ' to sqlite cache') # 
 
 		if self.sqlite.does_table_exist(tblcountsname):
 			logging.info('table ' + tblcountsname + ' exists.')
