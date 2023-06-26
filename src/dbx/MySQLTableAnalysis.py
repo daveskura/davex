@@ -1,7 +1,7 @@
 """
   Dave Skura
 
-	Connect to Postgres
+	Connect to MySQL
 	Connect to local sqlite_db
 	read table details
 	calc metrics 
@@ -10,11 +10,12 @@
 
 """
 from sqlitedave_package.sqlitedave import sqlite_db 
-from postgresdave_package.postgresdave import postgres_db 
+from mysqldave_package.mysqldave import mysql_db 
 from schemawizard_package.schemawizard import schemawiz
 
 import logging
 import sys
+
 class runner():
 
 	def __init__(self,selected_schema='%',selected_table=''):
@@ -22,22 +23,33 @@ class runner():
 		self.metrics_tablehdr_name = 'table_comments'
 		self.sqlite = sqlite_db()
 		
-		self.db = postgres_db() 
+		self.db = mysql_db() 
 
 		self.connect()
 		self.build_metrics_table(self.sqlite)
 		self.sqlite.execute('DELETE FROM ' + self.metrics_table_name + " WHERE schema_name='" + selected_schema + "' and table_name = '" + selected_table + "'")
-		
-		comment_sql = "select obj_description('" + selected_schema + '.' + selected_table + "'::regclass);"
+
+		comment_sql = """
+			SELECT table_comment 
+			FROM information_Schema.tables 
+			WHERE upper(table_schema)=upper('world') and upper(table_name)=upper('city')
+		"""
+		comment_sql = comment_sql.replace('world',selected_schema)
+		comment_sql = comment_sql.replace('city',selected_table)
+
 		table_comment = self.db.queryone(comment_sql)
+		
 		self.table_comment_insert(self.sqlite,selected_schema,selected_table,table_comment)
 
 		col_list_sql = """
-			SELECT column_name as field_name,coalesce(col_description((table_schema||'.'||table_name)::regclass::oid, ordinal_position),'') as column_comment
-			FROM INFORMATION_SCHEMA.COLUMNS
-			WHERE table_Schema like '""" + selected_schema + """' and upper(table_name) like upper('""" + selected_table + """')
+			SELECT column_name,a.column_comment
+			FROM INFORMATION_SCHEMA.COLUMNS a
+			WHERE upper(table_schema)=upper('world') and upper(table_name)=upper('city')
 			ORDER BY ordinal_position
 		"""
+		col_list_sql = col_list_sql.replace('world',selected_schema)
+		col_list_sql = col_list_sql.replace('city',selected_table)
+
 		data = self.db.query(col_list_sql)
 		for row in data:
 			col_name = row[0]
@@ -56,8 +68,7 @@ class runner():
 				'table_catalog' as field_name,
 				sample_data,
 				distinct_values,
-				indexes,
-				(SELECT 'my table comments') as ddl_comments
+				indexes
 				FROM 
 				(SELECT count(DISTINCT table_catalog) as distinct_values FROM public.tableowners) distinct_counter
 				LEFT JOIN (
@@ -117,8 +128,9 @@ class runner():
 				sample_data		= onerow[3]
 				distinct_values= onerow[4]
 				indexes				= onerow[5]
+				ddl_comments 	= col_comment
 				
-				self.metric_insert(self.sqlite,selected_schema,selected_table,col_name,sample_data,distinct_values,indexes,col_comment )
+				self.metric_insert(self.sqlite,selected_schema,selected_table,col_name,sample_data,distinct_values,indexes,ddl_comments )
 			
 		print('Analaysis completed. ' + self.metrics_table_name + ' updated with stats from ' + selected_schema + '.' + selected_table)
 
@@ -194,5 +206,4 @@ class runner():
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	logging.info(" Starting Table Analysis") # 
-
-	runner('public','tableowners')
+	runner('world','city')
