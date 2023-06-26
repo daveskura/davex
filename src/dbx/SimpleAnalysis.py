@@ -77,33 +77,19 @@ class runner():
 			query_schemacounts = """
 				select table_schema, count(*) as counts
 				from information_schema.tables
-				"""
-			if schemaname == '': 
-				query_schemacounts += " WHERE table_schema not in ('pg_catalog','information_schema') "
-			else:
-				query_schemacounts += " WHERE table_schema = '" + schemaname + "' "
-
-			query_schemacounts += " group by table_schema "
-
+				WHERE table_schema not in ('pg_catalog','information_schema') 
+				group by table_schema 
+			"""
 		elif databasetype == dbtype.MySQL:
 			query_schemacounts = """
 				SELECT table_schema,count(*) as counts
-				FROM information_Schema.tables """
-			if schemaname == '': 
-				query_schemacounts += " WHERE table_schema not in ('performance_schema','sys','information_schema') "
-			else:
-				query_schemacounts += " WHERE table_schema = '" + schemaname + "' "
-
-			query_schemacounts += " group by table_schema "
+				FROM information_Schema.tables 
+				WHERE table_schema not in ('performance_schema','sys','information_schema') 
+				group by table_schema 
+				"""
     
-		tblcountsname = databasetype.name.lower() 
-		schemacountsname = databasetype.name.lower() 
-		if schemaname == '':
-			tblcountsname +=  '_table_counts'
-			schemacountsname +=  '_schemas'
-		else:
-			tblcountsname +=  '_' + schemaname + '_table_counts'
-			schemacountsname +=  '_' + schemaname
+		tblcountsname = databasetype.name.lower() + '_table_counts'
+		schemacountsname = databasetype.name.lower() + '_schemas'
 
 		csvtablefilename = tblcountsname + '.tsv'
 		csvschemafilename = schemacountsname + '.tsv'
@@ -126,7 +112,7 @@ class runner():
 			logging.info('\nCreating ' + schemacountsname)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvschemafilename,schemacountsname,False,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvschemafilename,schemacountsname,True,obj.delimiter)
 
 		logging.info(schemacountsname + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + schemacountsname)) + ' rows.\n') 
 
@@ -144,11 +130,9 @@ class runner():
 			logging.info('\nCreating ' + tblcountsname)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvtablefilename,tblcountsname,False,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvtablefilename,tblcountsname,True,obj.delimiter)
 
 		logging.info(tblcountsname + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + tblcountsname)) + ' rows.\n') 
-
-
 
 		self.disconnect()
 	def connect(self):

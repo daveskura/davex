@@ -84,6 +84,10 @@ def main():
 		else:
 			print('parameter unknown')
 
+def show_TableAnalysis():
+	print('Usage: py -m dbx.TableAnalysis')
+	print(' - does nothing yet')
+
 def show_run():
 	print('Usage: py -m dbx.run')
 	print(' - does nothing yet')
