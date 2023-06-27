@@ -1,2 +1,3 @@
 *.pyc
 *.tsv
+local_sqlite_db
