@@ -35,8 +35,8 @@ def showmenu(dbname,selected_schema='',selected_table=''):
 	print('0. Show local cache')
 	print('1. List/Select schemas in ' + dbname)
 	print('2. List/Select schemas counts ')
-	print('3. Show all tables in ' + database_ref)
-	print('4. Show all tables with row counts ' )
+	print('3. List/Select tables in ' + database_ref)
+	print('4. List/Select tables with row counts ' )
 	print('5. ' + search_ref + ' count all tables (cache as ' + tblcountsname + ' & ' + schemacountsname + ')') 
 	if selected_table !='':
 		print('6. Show table details for ' + database_ref)
@@ -223,9 +223,9 @@ def main():
 					for row in datalines:
 						flds = row.split('\t')
 						if flds[0] == tableselecter:
-							if datalines[0].split('\t')[1] == 'table_schema':
+							if datalines[0].split('\t')[1].lower() == 'table_schema':
 								selected_schema = flds[1]
-							if datalines[0].split('\t')[2] == 'table_name':
+							if datalines[0].split('\t')[2].lower() == 'table_name':
 								selected_table = flds[2]
 
 				if selected_table != '':
@@ -244,9 +244,9 @@ def main():
 					for row in datalines:
 						flds = row.split('\t')
 						if flds[0] == tableselecter:
-							if datalines[0].split('\t')[1] == 'table_schema':
+							if datalines[0].split('\t')[1].lower() == 'table_schema':
 								selected_schema = flds[1]
-							if datalines[0].split('\t')[2] == 'table_name':
+							if datalines[0].split('\t')[2].lower() == 'table_name':
 								selected_table = flds[2]
 
 				if selected_table != '':
@@ -264,7 +264,10 @@ def main():
 		elif selectchar.upper() == '6':
 			help.show_TableAnalysis()
 			print('')
-			TableAnalysis.runner(databasetype,selected_table)
+			if databasetype == SimpleAnalysis.dbtype.MySQL:
+				MySQLTableAnalysis.runner(selected_schema,selected_table)
+			elif databasetype == SimpleAnalysis.dbtype.Postgres:
+				PostgresTableAnalysis.runner(selected_schema,selected_table)
 
 
 		elif selectchar.upper() == 'x':

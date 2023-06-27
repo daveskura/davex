@@ -71,33 +71,18 @@ class runner():
 						limit 1
 						) sampling ON (1=1)
 				LEFT JOIN (
-						SELECT
-								concat(coalesce(A.indexdef,''),chr(10)
-																								,coalesce(B.indexdef,''),chr(10)
-																								,coalesce(C.indexdef,''),chr(10)
-																								,coalesce(D.indexdef,'')) as indexes
-						FROM
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-												and indexdef like '%table_catalog%'
-								) AA WHERE rnk=1) A LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) BB WHERE rnk=2) B ON (A.tablename = B.tablename) LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) CC WHERE rnk=3) C ON (A.tablename = C.tablename) LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) DD WHERE rnk=4) D ON (A.tablename = D.tablename)
-						) index_qry ON (1=1)
+					SELECT
+							concat(coalesce(indexdef,'')
+							,chr(10),coalesce(LEAD(indexdef,1) OVER (ORDER BY indexdef))
+							,chr(10),coalesce(LEAD(indexdef,2) OVER (ORDER BY indexdef))
+							,chr(10),coalesce(LEAD(indexdef,3) OVER (ORDER BY indexdef))
+							,chr(10),coalesce(LEAD(indexdef,4) OVER (ORDER BY indexdef))
+							) as indexes
+					FROM pg_indexes
+									 WHERE schemaname= 'public' 
+													and tablename = 'tableowners'
+													and indexdef like '%table_catalog%'
+					) indexqry ON (1=1)        
 	
 
 			"""

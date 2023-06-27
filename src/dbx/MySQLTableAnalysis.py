@@ -53,7 +53,7 @@ class runner():
 		data = self.db.query(col_list_sql)
 		for row in data:
 			col_name = row[0]
-			col_comment = row[1]
+			col_comment = str(row[1])
 			if col_comment.find("'") > -1:
 				col_comment = col_comment.replace("'",'`')
 
@@ -63,59 +63,42 @@ class runner():
 			sql = """
 
 				SELECT
-				'public' as schemaname,
-				'tableowners' as tablename,
-				'table_catalog' as field_name,
+				'world' as schemaname,
+				'city' as tablename,
+				'CountryCode' as field_name,
 				sample_data,
 				distinct_values,
 				indexes
 				FROM 
-				(SELECT count(DISTINCT table_catalog) as distinct_values FROM public.tableowners) distinct_counter
+				(SELECT count(DISTINCT CountryCode) as distinct_values FROM world.city) distinct_counter
 				LEFT JOIN (
-						SELECT concat('[ ',table_catalog
-								,' ][ ', coalesce(LEAD(table_catalog,1) OVER (ORDER BY table_catalog),'') 
-								,' ][ ', coalesce(LEAD(table_catalog,2) OVER (ORDER BY table_catalog),'') 
+						SELECT concat('[ ',CountryCode
+								,' ][ ', coalesce(LEAD(CountryCode,1) OVER (ORDER BY CountryCode),'') 
+								,' ][ ', coalesce(LEAD(CountryCode,2) OVER (ORDER BY CountryCode),'') 
 								,' ]') as sample_data 
 						FROM 
-								(SELECT DISTINCT table_catalog FROM public.tableowners) dist_qry
-						ORDER BY table_catalog
+								(SELECT DISTINCT CountryCode FROM world.city) dist_qry
+						ORDER BY CountryCode
 						limit 1
 						) sampling ON (1=1)
-				LEFT JOIN (
-						SELECT
-								concat(coalesce(A.indexdef,''),chr(10)
-																								,coalesce(B.indexdef,''),chr(10)
-																								,coalesce(C.indexdef,''),chr(10)
-																								,coalesce(D.indexdef,'')) as indexes
-						FROM
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-												and indexdef like '%table_catalog%'
-								) AA WHERE rnk=1) A LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) BB WHERE rnk=2) B ON (A.tablename = B.tablename) LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) CC WHERE rnk=3) C ON (A.tablename = C.tablename) LEFT JOIN
-								(SELECT tablename,indexdef FROM (SELECT tablename,rank() OVER (ORDER BY indexdef) rnk,indexdef
-								 FROM pg_indexes
-								 WHERE schemaname= 'public' and tablename = 'tableowners'
-								 and indexdef like '%table_catalog%'
-								) DD WHERE rnk=4) D ON (A.tablename = D.tablename)
-						) index_qry ON (1=1)
-	
-
+				LEFT JOIN (				
+				SELECT
+					concat(coalesce(INDEX_NAME,'')
+					,'\n',coalesce(LEAD(INDEX_NAME,1) OVER (ORDER BY INDEX_NAME))
+					,'\n',coalesce(LEAD(INDEX_NAME,2) OVER (ORDER BY INDEX_NAME))
+					,'\n',coalesce(LEAD(INDEX_NAME,3) OVER (ORDER BY INDEX_NAME))
+					,'\n',coalesce(LEAD(INDEX_NAME,4) OVER (ORDER BY INDEX_NAME))
+					) as indexes
+					FROM INFORMATION_SCHEMA.STATISTICS
+					WHERE TABLE_SCHEMA= 'world' 
+									and TABLE_NAME = 'city'
+									and COLUMN_NAME = 'CountryCode'
+					) indexqry ON (1=1)        
 			"""
 
-			sql = sql.replace('public',selected_schema)
-			sql = sql.replace('tableowners',selected_table)
-			sql = sql.replace('table_catalog',col_name)
+			sql = sql.replace('world',selected_schema)
+			sql = sql.replace('city',selected_table)
+			sql = sql.replace('CountryCode',col_name)
 			#print(sql)
 			#sys.exit(0)
 			metric_data = self.db.query(sql)			
