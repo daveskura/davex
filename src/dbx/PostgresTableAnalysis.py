@@ -6,8 +6,6 @@
 	read table details
 	calc metrics 
 	load metrics to table in sqlite cache tables
-	
-
 """
 from sqlitedave_package.sqlitedave import sqlite_db 
 from postgresdave_package.postgresdave import postgres_db 
@@ -17,9 +15,13 @@ import logging
 import sys
 class runner():
 
-	def __init__(self,selected_schema='%',selected_table=''):
-		self.metrics_table_name = 'table_metrics'
-		self.metrics_tablehdr_name = 'table_comments'
+	def __init__(self,cache_prefix='',selected_schema='%',selected_table=''):
+
+		self.cache_schemas_tablename = cache_prefix.lower() + 'postgres' + "_schemas"
+		self.cache_tblcounts_tablename = cache_prefix.lower() + 'postgres' + "_table_counts"
+
+		self.metrics_table_name = cache_prefix.lower() + 'table_metrics'
+		self.metrics_tablehdr_name = cache_prefix.lower() + 'table_comments'
 		self.sqlite = sqlite_db()
 		
 		self.db = postgres_db() 
@@ -30,6 +32,8 @@ class runner():
 		
 		comment_sql = "select obj_description('" + selected_schema + '.' + selected_table + "'::regclass);"
 		table_comment = self.db.queryone(comment_sql)
+		if not table_comment:
+			table_comment=''
 		self.table_comment_insert(self.sqlite,selected_schema,selected_table,table_comment)
 
 		col_list_sql = """
@@ -66,22 +70,22 @@ class runner():
 								,' ][ ', coalesce(LEAD(table_catalog,2) OVER (ORDER BY table_catalog),'') 
 								,' ]') as sample_data 
 						FROM 
-								(SELECT DISTINCT table_catalog FROM public.tableowners) dist_qry
+								(SELECT DISTINCT table_catalog::varchar as table_catalog FROM public.tableowners) dist_qry
 						ORDER BY table_catalog
 						limit 1
 						) sampling ON (1=1)
 				LEFT JOIN (
 					SELECT
 							concat(coalesce(indexdef,'')
-							,chr(10),coalesce(LEAD(indexdef,1) OVER (ORDER BY indexdef))
-							,chr(10),coalesce(LEAD(indexdef,2) OVER (ORDER BY indexdef))
-							,chr(10),coalesce(LEAD(indexdef,3) OVER (ORDER BY indexdef))
-							,chr(10),coalesce(LEAD(indexdef,4) OVER (ORDER BY indexdef))
+							,'; ',coalesce(LEAD(indexdef,1) OVER (ORDER BY indexdef))
+							,'; ',coalesce(LEAD(indexdef,2) OVER (ORDER BY indexdef))
+							,'; ',coalesce(LEAD(indexdef,3) OVER (ORDER BY indexdef))
+							,'; ',coalesce(LEAD(indexdef,4) OVER (ORDER BY indexdef))
 							) as indexes
 					FROM pg_indexes
 									 WHERE schemaname= 'public' 
 													and tablename = 'tableowners'
-													and indexdef like '%table_catalog%'
+													and indexdef like '%(%table_catalog%'
 					) indexqry ON (1=1)        
 	
 
@@ -115,6 +119,7 @@ class runner():
 			csql = "CREATE TABLE " + self.metrics_tablehdr_name + """ (
 				schema_name text,
 				table_name text,
+				row_counts int,
 				table_comments text
 				)
 			"""
@@ -139,9 +144,34 @@ class runner():
 		dsql += " WHERE schema_name ='" + schema_name + "' and table_name='" + table_name + "';"
 		sqlite.execute(dsql)
 
-		isql = 'INSERT INTO ' + self.metrics_tablehdr_name + ' (schema_name,table_name,table_comments) VALUES ('
+		qry = """
+			SELECT coalesce(counts,0)
+			FROM """ + self.cache_tblcounts_tablename + """
+			WHERE table_schema='public' and table_name='tableowners'
+		"""
+		row_counts = 0
+		qry = qry.replace('public',schema_name)
+		qry = qry.replace('tableowners',table_name)
+		try:
+			row_counts = sqlite.queryone(qry)
+			if not row_counts:
+				row_counts = 0
+		except:
+			qry = """
+				SELECT count(*)
+				FROM public.tableowners
+			"""
+			qry = qry.replace('public',schema_name)
+			qry = qry.replace('tableowners',table_name)
+			row_counts = self.db.queryone(qry)
+			if not row_counts:
+				row_counts = 0
+
+		isql = 'INSERT INTO ' + self.metrics_tablehdr_name + ' (schema_name,table_name,row_counts,table_comments) VALUES ('
 		isql += "'" + schema_name + "',"
 		isql += "'" + table_name + "',"
+		isql += "" + str(row_counts) + ","
+
 		isql += "'" + table_comments + "');"
 		sqlite.execute(isql)
 
@@ -180,4 +210,4 @@ if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	logging.info(" Starting Table Analysis") # 
 
-	runner('public','tableowners')
+	runner('demo','public','tableowners')

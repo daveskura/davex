@@ -24,9 +24,10 @@ class dbtype(Enum):
 	SQLite	= 3
 
 class runner():
-	def __init__(self,databasetype=dbtype.nodb,schemaname=''):
+	def __init__(self,databasetype=dbtype.nodb,pcache_prefix='',schemaname='',):
 		self.sqlite = sqlite_db()
 		self.db = None # postgres_db() or mysql_db()
+		cache_prefix = ''
 
 		if databasetype == dbtype.nodb:
 			print('Which database do you want to analyze ?')
@@ -39,6 +40,17 @@ class runner():
 				databasetype = dbtype.MySQL
 			else:
 				sys.exit(0)
+
+			if pcache_prefix !='':
+				print('Give this database a name in the cache ?')
+				cache_prefix = input('cache table prefix: ') or ''
+		else:
+			if pcache_prefix !='':
+				cache_prefix = pcache_prefix 
+
+
+		cache_schemas_tablename = cache_prefix.lower() + databasetype.name.lower() + "_schemas"
+		cache_tblcounts_tablename = cache_prefix.lower() + databasetype.name.lower() + "_table_counts"
 
 		if databasetype == dbtype.Postgres:
 			self.db = postgres_db()
@@ -88,11 +100,8 @@ class runner():
 				group by table_schema 
 				"""
     
-		tblcountsname = databasetype.name.lower() + '_table_counts'
-		schemacountsname = databasetype.name.lower() + '_schemas'
-
-		csvtablefilename = tblcountsname + '.tsv'
-		csvschemafilename = schemacountsname + '.tsv'
+		csvtablefilename = cache_tblcounts_tablename + '.tsv'
+		csvschemafilename = cache_schemas_tablename + '.tsv'
 		logging.info("Querying " + databasetype.name + " for schema counts ") # 
 		self.db.export_query_to_csv(query_schemacounts,csvschemafilename,'\t')
 
@@ -101,38 +110,38 @@ class runner():
 
 		logging.info("Loading " + csvschemafilename + ' to local sqlite cache') # 
 
-		if self.sqlite.does_table_exist(schemacountsname):
-			logging.info('table ' + schemacountsname + ' exists.')
-			logging.info('tuncate/load table ' + schemacountsname)
-			self.sqlite.load_csv_to_table(csvschemafilename,schemacountsname,True,'\t')
+		if self.sqlite.does_table_exist(cache_schemas_tablename):
+			logging.info('table ' + cache_schemas_tablename + ' exists.')
+			logging.info('tuncate/load table ' + cache_schemas_tablename)
+			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,True,'\t')
 		else:
 			obj = schemawiz(csvschemafilename)
-			sqlite_ddl = obj.guess_sqlite_ddl(schemacountsname)
+			sqlite_ddl = obj.guess_sqlite_ddl(cache_schemas_tablename)
 
-			logging.info('\nCreating ' + schemacountsname)
+			logging.info('\nCreating ' + cache_schemas_tablename)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvschemafilename,schemacountsname,True,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,True,obj.delimiter)
 
-		logging.info(schemacountsname + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + schemacountsname)) + ' rows.\n') 
+		logging.info(cache_schemas_tablename + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + cache_schemas_tablename)) + ' rows.\n') 
 
 
 		logging.info("Loading " + csvtablefilename + ' to sqlite cache') # 
 
-		if self.sqlite.does_table_exist(tblcountsname):
-			logging.info('table ' + tblcountsname + ' exists.')
-			logging.info('tuncate/load table ' + tblcountsname)
-			self.sqlite.load_csv_to_table(csvtablefilename,tblcountsname,True,'\t')
+		if self.sqlite.does_table_exist(cache_tblcounts_tablename):
+			logging.info('table ' + cache_tblcounts_tablename + ' exists.')
+			logging.info('tuncate/load table ' + cache_tblcounts_tablename)
+			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,True,'\t')
 		else:
 			obj = schemawiz(csvtablefilename)
-			sqlite_ddl = obj.guess_sqlite_ddl(tblcountsname)
+			sqlite_ddl = obj.guess_sqlite_ddl(cache_tblcounts_tablename)
 
-			logging.info('\nCreating ' + tblcountsname)
+			logging.info('\nCreating ' + cache_tblcounts_tablename)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvtablefilename,tblcountsname,True,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,True,obj.delimiter)
 
-		logging.info(tblcountsname + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + tblcountsname)) + ' rows.\n') 
+		logging.info(cache_tblcounts_tablename + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + cache_tblcounts_tablename)) + ' rows.\n') 
 
 		self.disconnect()
 	def connect(self):

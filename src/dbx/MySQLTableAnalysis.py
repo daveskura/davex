@@ -18,9 +18,13 @@ import sys
 
 class runner():
 
-	def __init__(self,selected_schema='%',selected_table=''):
-		self.metrics_table_name = 'table_metrics'
-		self.metrics_tablehdr_name = 'table_comments'
+	def __init__(self,cache_prefix='',selected_schema='%',selected_table=''):
+
+		self.cache_schemas_tablename = cache_prefix.lower() + 'mysql' + "_schemas"
+		self.cache_tblcounts_tablename = cache_prefix.lower() + 'mysql' + "_table_counts"
+
+		self.metrics_table_name = cache_prefix.lower() + 'table_metrics'
+		self.metrics_tablehdr_name = cache_prefix.lower() + 'table_comments'
 		self.sqlite = sqlite_db()
 		
 		self.db = mysql_db() 
@@ -84,10 +88,10 @@ class runner():
 				LEFT JOIN (				
 				SELECT
 					concat(coalesce(INDEX_NAME,'')
-					,'\n',coalesce(LEAD(INDEX_NAME,1) OVER (ORDER BY INDEX_NAME))
-					,'\n',coalesce(LEAD(INDEX_NAME,2) OVER (ORDER BY INDEX_NAME))
-					,'\n',coalesce(LEAD(INDEX_NAME,3) OVER (ORDER BY INDEX_NAME))
-					,'\n',coalesce(LEAD(INDEX_NAME,4) OVER (ORDER BY INDEX_NAME))
+					,'; ',coalesce(LEAD(INDEX_NAME,1) OVER (ORDER BY INDEX_NAME))
+					,'; ',coalesce(LEAD(INDEX_NAME,2) OVER (ORDER BY INDEX_NAME))
+					,'; ',coalesce(LEAD(INDEX_NAME,3) OVER (ORDER BY INDEX_NAME))
+					,'; ',coalesce(LEAD(INDEX_NAME,4) OVER (ORDER BY INDEX_NAME))
 					) as indexes
 					FROM INFORMATION_SCHEMA.STATISTICS
 					WHERE TABLE_SCHEMA= 'world' 
@@ -125,6 +129,7 @@ class runner():
 			csql = "CREATE TABLE " + self.metrics_tablehdr_name + """ (
 				schema_name text,
 				table_name text,
+				row_counts int,
 				table_comments text
 				)
 			"""
@@ -149,9 +154,34 @@ class runner():
 		dsql += " WHERE schema_name ='" + schema_name + "' and table_name='" + table_name + "';"
 		sqlite.execute(dsql)
 
-		isql = 'INSERT INTO ' + self.metrics_tablehdr_name + ' (schema_name,table_name,table_comments) VALUES ('
+		qry = """
+			SELECT coalesce(counts,0)
+			FROM """ + self.cache_tblcounts_tablename + """
+			WHERE table_schema='world' and table_name='city'
+		"""
+		row_counts = 0
+		qry = qry.replace('world',schema_name)
+		qry = qry.replace('city',table_name)
+		try:
+			row_counts = sqlite.queryone(qry)
+			if not row_counts:
+				row_counts = 0
+		except:
+			qry = """
+				SELECT count(*)
+				FROM world.city
+			"""
+			qry = qry.replace('world',schema_name)
+			qry = qry.replace('city',table_name)
+			row_counts = self.db.queryone(qry)
+			if not row_counts:
+				row_counts = 0
+
+
+		isql = 'INSERT INTO ' + self.metrics_tablehdr_name + ' (schema_name,table_name,row_counts,table_comments) VALUES ('
 		isql += "'" + schema_name + "',"
 		isql += "'" + table_name + "',"
+		isql += "" + str(row_counts) + ","
 		isql += "'" + table_comments + "');"
 		sqlite.execute(isql)
 
@@ -189,4 +219,4 @@ class runner():
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	logging.info(" Starting Table Analysis") # 
-	runner('world','city')
+	runner('demo','world','city')
