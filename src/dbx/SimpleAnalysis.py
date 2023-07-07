@@ -48,14 +48,24 @@ class runner():
 			if pcache_prefix !='':
 				cache_prefix = pcache_prefix 
 
+		cache_schemas_tablename = cache_prefix.lower() + "schemas"
+		cache_tblcounts_tablename = cache_prefix.lower() + "table_counts"
+		if self.sqlite.does_table_exist(cache_schemas_tablename): 
+			if schemaname != '':
+				self.sqlite.execute("DELETE FROM " + cache_schemas_tablename + " WHERE upper(table_schema) = upper('" + schemaname + "')")
+			else:
+				self.sqlite.execute("DELETE FROM " + cache_schemas_tablename )
 
-		cache_schemas_tablename = cache_prefix.lower() + databasetype.name.lower() + "_schemas"
-		cache_tblcounts_tablename = cache_prefix.lower() + databasetype.name.lower() + "_table_counts"
+		if self.sqlite.does_table_exist(cache_tblcounts_tablename): 
+			if schemaname != '':
+				self.sqlite.execute("DELETE FROM " + cache_tblcounts_tablename + " WHERE upper(table_schema) = upper('" + schemaname + "')")
+			else:
+				self.sqlite.execute("DELETE FROM " + cache_tblcounts_tablename )
 
 		if databasetype == dbtype.Postgres:
-			self.db = postgres_db()
+			self.db = postgres_db(cache_prefix.lower().replace('_',''))
 		elif databasetype == dbtype.MySQL:
-			self.db = mysql_db()
+			self.db = mysql_db(cache_prefix.lower().replace('_',''))
 		else:
 			sys.exit(0)
 
@@ -112,8 +122,8 @@ class runner():
 
 		if self.sqlite.does_table_exist(cache_schemas_tablename):
 			logging.info('table ' + cache_schemas_tablename + ' exists.')
-			logging.info('tuncate/load table ' + cache_schemas_tablename)
-			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,True,'\t')
+			logging.info('load table ' + cache_schemas_tablename)
+			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,False,'\t')
 		else:
 			obj = schemawiz(csvschemafilename)
 			sqlite_ddl = obj.guess_sqlite_ddl(cache_schemas_tablename)
@@ -121,7 +131,7 @@ class runner():
 			logging.info('\nCreating ' + cache_schemas_tablename)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,True,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvschemafilename,cache_schemas_tablename,False,obj.delimiter)
 
 		logging.info(cache_schemas_tablename + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + cache_schemas_tablename)) + ' rows.\n') 
 
@@ -131,7 +141,7 @@ class runner():
 		if self.sqlite.does_table_exist(cache_tblcounts_tablename):
 			logging.info('table ' + cache_tblcounts_tablename + ' exists.')
 			logging.info('tuncate/load table ' + cache_tblcounts_tablename)
-			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,True,'\t')
+			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,False,'\t')
 		else:
 			obj = schemawiz(csvtablefilename)
 			sqlite_ddl = obj.guess_sqlite_ddl(cache_tblcounts_tablename)
@@ -139,7 +149,7 @@ class runner():
 			logging.info('\nCreating ' + cache_tblcounts_tablename)
 			self.sqlite.execute(sqlite_ddl)
 
-			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,True,obj.delimiter)
+			self.sqlite.load_csv_to_table(csvtablefilename,cache_tblcounts_tablename,False,obj.delimiter)
 
 		logging.info(cache_tblcounts_tablename + ' has ' + str(self.sqlite.queryone('SELECT COUNT(*) FROM ' + cache_tblcounts_tablename)) + ' rows.\n') 
 

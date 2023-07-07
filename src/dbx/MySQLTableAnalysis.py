@@ -6,7 +6,6 @@
 	read table details
 	calc metrics 
 	load metrics to table in sqlite cache tables
-	
 
 """
 from sqlitedave_package.sqlitedave import sqlite_db 
@@ -20,18 +19,21 @@ class runner():
 
 	def __init__(self,cache_prefix='',selected_schema='%',selected_table=''):
 
-		self.cache_schemas_tablename = cache_prefix.lower() + 'mysql' + "_schemas"
-		self.cache_tblcounts_tablename = cache_prefix.lower() + 'mysql' + "_table_counts"
+		self.cache_schemas_tablename = cache_prefix.lower() + "_schemas"
+		self.cache_tblcounts_tablename = cache_prefix.lower() + "_table_counts"
 
 		self.metrics_table_name = cache_prefix.lower() + 'table_metrics'
 		self.metrics_tablehdr_name = cache_prefix.lower() + 'table_comments'
 		self.sqlite = sqlite_db()
 		
-		self.db = mysql_db() 
+		self.db = mysql_db(cache_prefix.lower().replace('_','')) 
 
 		self.connect()
 		self.build_metrics_table(self.sqlite)
-		self.sqlite.execute('DELETE FROM ' + self.metrics_table_name + " WHERE schema_name='" + selected_schema + "' and table_name = '" + selected_table + "'")
+		if selected_schema != '':
+			self.sqlite.execute('DELETE FROM ' + self.metrics_table_name + " WHERE schema_name='" + selected_schema + "' and table_name = '" + selected_table + "'")
+		else:
+			self.sqlite.execute('DELETE FROM ' + self.metrics_table_name)
 
 		comment_sql = """
 			SELECT table_comment 
@@ -188,7 +190,7 @@ class runner():
 	def metric_insert(self,sqlite,schema_name,table_name,field_name,sample_data,distinct_values,indexes,field_comments ):
 
 		sample_data_cln = sample_data
-		if sample_data.find("'") > -1:
+		if str(sample_data).find("'") > -1:
 			sample_data_cln = sample_data.replace("'",'`')
 
 		dsql = 'DELETE FROM ' + self.metrics_table_name 

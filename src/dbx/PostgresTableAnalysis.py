@@ -17,8 +17,8 @@ class runner():
 
 	def __init__(self,cache_prefix='',selected_schema='%',selected_table=''):
 
-		self.cache_schemas_tablename = cache_prefix.lower() + 'postgres' + "_schemas"
-		self.cache_tblcounts_tablename = cache_prefix.lower() + 'postgres' + "_table_counts"
+		self.cache_schemas_tablename = cache_prefix.lower() +  "schemas"
+		self.cache_tblcounts_tablename = cache_prefix.lower() + "table_counts"
 
 		self.metrics_table_name = cache_prefix.lower() + 'table_metrics'
 		self.metrics_tablehdr_name = cache_prefix.lower() + 'table_comments'
@@ -28,8 +28,11 @@ class runner():
 
 		self.connect()
 		self.build_metrics_table(self.sqlite)
-		self.sqlite.execute('DELETE FROM ' + self.metrics_table_name + " WHERE schema_name='" + selected_schema + "' and table_name = '" + selected_table + "'")
-		
+		if selected_schema != '':
+			self.sqlite.execute('DELETE FROM ' + self.metrics_table_name + " WHERE schema_name='" + selected_schema + "' and table_name = '" + selected_table + "'")
+		else:
+			self.sqlite.execute('DELETE FROM ' + self.metrics_table_name )
+
 		comment_sql = "select obj_description('" + selected_schema + '.' + selected_table + "'::regclass);"
 		table_comment = self.db.queryone(comment_sql)
 		if not table_comment:
