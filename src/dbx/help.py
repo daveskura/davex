@@ -23,7 +23,6 @@ def main():
 		print('11. py -m dbx.mysql_export  ') 
 		print('12. py -m dbx.mysql_extract  ') 
 		print(' ')
-		print('x. Cancel')
 
 		selectchar = ''
 		while selectchar != 'x':
@@ -90,7 +89,8 @@ def show_TableAnalysis():
 
 def show_run():
 	print('Usage: py -m dbx.run')
-	print(' - does nothing yet')
+	print(' - run without parameters')
+	print(' - will provide a menu to anaylze a database')
 
 def show_SimpleAnalysis():
 	print('Usage: py -m dbx.SimpleAnalysis')
@@ -102,7 +102,7 @@ def show_SimpleAnalysis():
 	print("Querying MySQL or Postgres for table counts  ") # 
 	print("\t build file <*tables.tsv> with rowcounts by table")
 
-	print('Connect to local cache)
+	print('Connect to local cache')
 	print("\t create/load table <*_schemas> from file <*schemas.tsv>")
 	print("\t create/load table <*_table_counts> from file <*tables.tsv>")
 

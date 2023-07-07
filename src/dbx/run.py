@@ -59,7 +59,7 @@ class cacheinstancemgr():
 					UNION ALL
 					SELECT RANK() OVER (ORDER BY instance_name) as nbr ,instance_name  FROM """ + self.instance_tablename + """ 
 					) L
-				ORDER BY 1
+				ORDER BY nbr
 				"""
 		try:
 			data = self.sqlite.export_query_to_str(sql,'\t')
@@ -223,8 +223,8 @@ def main():
 					FROM (
 						SELECT DISTINCT table_schema FROM INFORMATION_SCHEMA.TABLES
 						WHERE table_schema not in ('performance_schema','sys','information_schema')
-						ORDER BY 1
 					)L
+					ORDER BY table_schema
 				"""
 			elif databasetype == SimpleAnalysis.dbtype.Postgres:
 				sql = """
@@ -234,9 +234,8 @@ def main():
 					FROM (
 							SELECT DISTINCT table_schema FROM INFORMATION_SCHEMA.TABLES
 							WHERE table_schema not in ('pg_catalog','information_schema')
-							ORDER BY 1
 					)L
-				
+					ORDER BY table_schema
 				"""
 			data = db.export_query_to_str(sql,'\t')
 			print(data)
@@ -260,7 +259,7 @@ def main():
 
 		elif selectchar.upper() == '2':
 			try:
-				sql = "SELECT rowid,* FROM " + cache_schemas_tablename + " order by counts"
+				sql = "SELECT rowid,* FROM " + cache_schemas_tablename + " order by rowid"
 				data = sqlite.export_query_to_str(sql,'\t')
 				print(data)
 				datalines = data.split('\n')
@@ -287,11 +286,13 @@ def main():
 				sql = """
 					SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
 					WHERE table_schema not in ('performance_schema','sys','information_schema')
+					ORDER BY table_schema,table_name
 				"""
 			elif databasetype == SimpleAnalysis.dbtype.Postgres:
 				sql = """
 					SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
 					WHERE table_schema not in ('pg_catalog','information_schema')
+					ORDER BY table_schema,table_name
 				"""
 			if selected_schema != '':
 				sql += " AND table_schema like '" + selected_schema + "' "
@@ -319,7 +320,7 @@ def main():
 
 		elif selectchar.upper() == '4':
 			try:
-				sql = "SELECT DENSE_RANK() OVER (ORDER BY counts,table_name) as nbr,* FROM " + cache_tblcounts_tablename + " ORDER BY counts "
+				sql = "SELECT DENSE_RANK() OVER (ORDER BY counts,table_name) as nbr,* FROM " + cache_tblcounts_tablename + " ORDER BY counts,table_name "
 				data = sqlite.export_query_to_str(sql,'\t')
 				print(data)
 				tableselecter = input('Select Table (nbr): ') or '\r'

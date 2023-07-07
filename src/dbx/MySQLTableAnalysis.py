@@ -57,7 +57,7 @@ class runner():
 		data = self.db.query(col_list_sql)
 		for row in data:
 			col_name = row[0]
-			col_comment = str(row[1])
+			col_comment = str(row[1].decode('ASCII'))
 			if col_comment.find("'") > -1:
 				col_comment = col_comment.replace("'",'`')
 
@@ -219,4 +219,4 @@ class runner():
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	logging.info(" Starting Table Analysis") # 
-	runner('demo','world','city')
+	runner('Demo_','world','city')
