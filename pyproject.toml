@@ -4,7 +4,7 @@ requires = ["hatchling","schemawizard_package","postgresdave_package","mysqldave
 build-backend = "hatchling.build"
 
 [project]
-name = "dbx"
+name = "davex"
 version = "2.1.6"
 dependencies = [
 	'querychart_package >= 2.0.3',
