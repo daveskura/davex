@@ -5,13 +5,9 @@ from sqlitedave_package.sqlitedave import sqlite_db
 from postgresdave_package.postgresdave import postgres_db 
 from mysqldave_package.mysqldave import mysql_db 
 
-#from dbx.PostgresTableAnalysis import runner as Postgres_runner
-#from dbx.MySQLTableAnalysis import runner as MySQL_runner
-#import dbx.SimpleAnalysis
-
-from PostgresTableAnalysis import runner as Postgres_runner
-from MySQLTableAnalysis import runner as MySQL_runner
-import SimpleAnalysis
+from dbx.PostgresTableAnalysis import runner as Postgres_runner
+from dbx.MySQLTableAnalysis import runner as MySQL_runner
+import dbx.SimpleAnalysis as SimpleAnalysis
 
 from querychart_package.querychart import charter
 
@@ -22,6 +18,57 @@ from dbx import help
 import sys
 
 logging.basicConfig(level=logging.INFO)
+
+def main():
+	selected_schema = ''
+	selected_table = ''
+	sqlite = sqlite_db()
+	sqlite.connect()
+	db = None # postgres_db() or mysql_db() 
+	db, dbtype, cache_prefix = cacheinstancemgr(sqlite).ask_for_instance()
+	
+	selectchar = 'this'
+	while selectchar != '\r':
+		showmenu(dbtype.name,cache_prefix,selected_schema,selected_table)
+		selectchar = readchar.readchar()
+		print('')
+		if selectchar.upper() == '0':
+			selected_schema, selected_table = Show_cache(sqlite,cache_prefix)
+
+		elif selectchar.upper() == '1':
+			selected_table = ''
+			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,False)
+
+		elif selectchar.upper() == '2':
+			selected_table = ''
+			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,True)
+
+		elif selectchar.upper() == '3':
+			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,False)
+
+		elif selectchar.upper() == '4':
+			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,True)
+
+		elif selectchar.upper() == '5':
+			SimpleAnalysis.runner(dbtype,cache_prefix,selected_schema)
+
+		elif selectchar.upper() == '6':
+			BuildShow_tableprofile(sqlite,cache_prefix,dbtype,selected_schema,selected_table)
+
+		elif selectchar.upper() == '7':
+			grapharoo(cache_prefix,selected_schema,selected_table)
+
+		elif selectchar.upper() == '8':
+			grapharooyou(cache_prefix,selected_schema,selected_table)
+
+		elif selectchar.upper() == 'x':
+			print('Emptying cache')
+			tables = sqlite.query("	SELECT name FROM sqlite_master WHERE type = 'table'	")
+			for row in tables:
+				sqlite.execute('drop table ' + row[0])
+
+	sqlite.close()
+	db.close()
 
 class cacheinstancemgr():
 	def __init__(self,sqlite):
@@ -300,8 +347,9 @@ def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema
 	if usecache:
 
 		try:
-			sql = "SELECT DENSE_RANK() OVER (ORDER BY counts,table_name) as nbr,table_schema,table_name,counts FROM " + cache_tblcounts_tablename + " ORDER BY counts,table_name "
-			print(sql)
+			sql = "SELECT DENSE_RANK() OVER (ORDER BY counts,table_name) as nbr,table_schema,table_name,counts FROM " + cache_tblcounts_tablename 
+			sql += " WHERE table_schema like '%" + suggested_schema + "%'"
+			sql += " ORDER BY counts,table_name "
 			data = cache_db.export_query_to_str(sql,'\t')
 			print(data)
 			tableselecter = input('Select Table (nbr): ') or '\r'
@@ -329,9 +377,8 @@ def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema
 				SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
 				WHERE table_schema not in ('pg_catalog','information_schema')
 			"""
-		if suggested_schema != '':
-			sql += " AND table_schema like '" + suggested_schema + "' "
-				
+
+		sql += " AND table_schema like '%" + suggested_schema + "%' "				
 		sql += ' ORDER BY table_schema,table_name'
 			
 		try:
@@ -440,7 +487,7 @@ def grapharooyou(cache_prefix='',selected_schema='',selected_table=''):
 				ON (A.schema_name=B.TABLE_SCHEMA AND A.table_name = B.TABLE_NAME)
 		WHERE A.schema_name='""" + selected_schema + "' AND	A.table_name='" + selected_table + "'"
 
-	charter().csv_querybarchart(sql,'',title,xlabel,ylabel)
+	charter().csv_querybarchart(sql,'',title,xlabel,ylabel,8)
 
 def grapharoo(cache_prefix='',selected_schema='',selected_table=''):
 	logging.info("cache_prefix " + cache_prefix) # 
@@ -456,56 +503,8 @@ def grapharoo(cache_prefix='',selected_schema='',selected_table=''):
 		FROM """ + full_tablename + """
 		WHERE schema_name='""" + selected_schema + "' AND	table_name='" + selected_table + "'"
 
-	charter().csv_querybarchart(sql,'',title,xlabel,ylabel)
+	charter().csv_querybarchart(sql,'',title,xlabel,ylabel,8)
 
-def main():
-	selected_schema = ''
-	selected_table = ''
-	sqlite = sqlite_db()
-	sqlite.connect()
-	db = None # postgres_db() or mysql_db() 
-	db, dbtype, cache_prefix = cacheinstancemgr(sqlite).ask_for_instance()
-	
-	selectchar = 'this'
-	while selectchar != '\r':
-		showmenu(dbtype.name,cache_prefix,selected_schema,selected_table)
-		selectchar = readchar.readchar()
-		print('')
-		if selectchar.upper() == '0':
-			selected_schema, selected_table = Show_cache(sqlite,cache_prefix)
-
-		elif selectchar.upper() == '1':
-			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,False)
-
-		elif selectchar.upper() == '2':
-			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,True)
-
-		elif selectchar.upper() == '3':
-			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,False)
-
-		elif selectchar.upper() == '4':
-			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,True)
-
-		elif selectchar.upper() == '5':
-			SimpleAnalysis.runner(dbtype,cache_prefix,selected_schema)
-
-		elif selectchar.upper() == '6':
-			BuildShow_tableprofile(sqlite,cache_prefix,dbtype,selected_schema,selected_table)
-
-		elif selectchar.upper() == '7':
-			grapharoo(cache_prefix,selected_schema,selected_table)
-
-		elif selectchar.upper() == '8':
-			grapharooyou(cache_prefix,selected_schema,selected_table)
-
-		elif selectchar.upper() == 'x':
-			print('Emptying cache')
-			tables = sqlite.query("	SELECT name FROM sqlite_master WHERE type = 'table'	")
-			for row in tables:
-				sqlite.execute('drop table ' + row[0])
-
-	sqlite.close()
-	db.close()
 
 
 main()

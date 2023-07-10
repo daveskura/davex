@@ -5,12 +5,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dbx"
-version = "2.1.3"
+version = "2.1.6"
 dependencies = [
+	'querychart_package >= 2.0.3',
   'schemawizard_package >= 2.5.1',
-  'postgresdave_package >= 2.0.2',
-  'mysqldave_package >= 2.0.2',
-  'sqlitedave_package >= 1.3.0',
+  'postgresdave_package >= 2.0.3',
+  'mysqldave_package >= 2.0.3',
+  'sqlitedave_package >= 2.0.1',
   'garbledave_package >= 1.0.0 '
 ]
 authors = [
