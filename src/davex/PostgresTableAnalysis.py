@@ -17,14 +17,14 @@ class runner():
 
 	def __init__(self,cache_prefix='',selected_schema='%',selected_table=''):
 
-		self.cache_schemas_tablename = cache_prefix.lower() +  "schemas"
-		self.cache_tblcounts_tablename = cache_prefix.lower() + "table_counts"
+		self.cache_schemas_tablename = cache_prefix.lower() + "_schemas"
+		self.cache_tblcounts_tablename = cache_prefix.lower() + "_table_counts"
 
 		self.metrics_table_name = cache_prefix.lower() + 'table_metrics'
 		self.metrics_tablehdr_name = cache_prefix.lower() + 'table_comments'
-		self.sqlite = sqlite_db()
-		
-		self.db = postgres_db() 
+
+		self.sqlite = sqlite_db()		
+		self.db = postgres_db(cache_prefix.lower().replace('_','')) 
 
 		self.connect()
 		self.build_metrics_table(self.sqlite)

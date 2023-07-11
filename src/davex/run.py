@@ -5,16 +5,16 @@ from sqlitedave_package.sqlitedave import sqlite_db
 from postgresdave_package.postgresdave import postgres_db 
 from mysqldave_package.mysqldave import mysql_db 
 
-from dbx.PostgresTableAnalysis import runner as Postgres_runner
-from dbx.MySQLTableAnalysis import runner as MySQL_runner
-import dbx.SimpleAnalysis as SimpleAnalysis
+from PostgresTableAnalysis import runner as Postgres_runner
+from davex.MySQLTableAnalysis import runner as MySQL_runner
+import davex.SimpleAnalysis as SimpleAnalysis
+from davex import help
 
 from querychart_package.querychart import charter
 
 import readchar
 
 import logging
-from dbx import help
 import sys
 
 logging.basicConfig(level=logging.INFO)
@@ -182,9 +182,9 @@ class cacheinstancemgr():
 			self.add_instance(dbtype,cache_instance)
 
 		if dbtype == SimpleAnalysis.dbtype.Postgres:
-			db = postgres_db(cache_instance) 
+			db = postgres_db(cache_instance.lower().replace('_','')) 
 		elif dbtype == SimpleAnalysis.dbtype.MySQL:
-			db = mysql_db(cache_instance)
+			db = mysql_db(cache_instance.lower().replace('_',''))
 		else:
 			sys.exit(0)
 
@@ -220,9 +220,9 @@ def showmenu(dbname,pcache_prefix='',selected_schema='',selected_table=''):
 	print('2. List/Select schemas counts ')
 	print('3. List/Select tables in ' + database_ref)
 	print('4. List/Select tables with row counts ' )
-	print('5. Count tables, store in cache.') 
+	print('5. Build table counts.') 
 	if selected_table !='':
-		print('6. Show table details for ' + database_ref)
+		print('6. Build table profile for ' + database_ref)
 		print('7. Graph distinct value counts by field for ' + database_ref)
 		print('8. Graph percent (%) distinct value counts/total rows by field for ' + database_ref)
 
