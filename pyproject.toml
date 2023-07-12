@@ -5,11 +5,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "davex"
-version = "2.1.8"
+version = "2.1.9"
 dependencies = [
-  'querychart_package >= 2.0.3',
+  'readchar',
+  'querychart_package >= 2.0.4',
   'schemawizard_package >= 2.5.1',
-  'postgresdave_package >= 2.0.3',
+  'postgresdave_package >= 2.0.4',
   'mysqldave_package >= 2.0.3',
   'sqlitedave_package >= 2.0.1',
   'garbledave_package >= 1.0.0 '
