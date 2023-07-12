@@ -1,13 +1,13 @@
 [build-system]
-requires = ["hatchling","schemawizard_package","postgresdave_package","mysqldave_package","garbledave_package","sqlitedave_package"]
+requires = ["hatchling","readchar","querychart_package","schemawizard_package","postgresdave_package","mysqldave_package","garbledave_package","sqlitedave_package"]
 
 build-backend = "hatchling.build"
 
 [project]
 name = "davex"
-version = "2.1.6"
+version = "2.1.8"
 dependencies = [
-	'querychart_package >= 2.0.3',
+  'querychart_package >= 2.0.3',
   'schemawizard_package >= 2.5.1',
   'postgresdave_package >= 2.0.3',
   'mysqldave_package >= 2.0.3',
@@ -29,5 +29,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/daveskura/dbx"
+"Homepage" = "https://github.com/daveskura/davex"
 "Author Linkedin" = "https://www.linkedin.com/in/2166883"

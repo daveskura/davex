@@ -5,16 +5,16 @@ from sqlitedave_package.sqlitedave import sqlite_db
 from postgresdave_package.postgresdave import postgres_db 
 from mysqldave_package.mysqldave import mysql_db 
 
-from dbx.PostgresTableAnalysis import runner as Postgres_runner
-from dbx.MySQLTableAnalysis import runner as MySQL_runner
-import dbx.SimpleAnalysis as SimpleAnalysis
+from davex.PostgresTableAnalysis import runner as Postgres_runner
+from davex.MySQLTableAnalysis import runner as MySQL_runner
+import davex.SimpleAnalysis as SimpleAnalysis
 
 from querychart_package.querychart import charter
 
 import readchar
 
 import logging
-from dbx import help
+from davex import help
 import sys
 
 logging.basicConfig(level=logging.INFO)
