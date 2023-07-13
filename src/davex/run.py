@@ -67,6 +67,9 @@ def main():
 			for row in tables:
 				sqlite.execute('drop table ' + row[0])
 
+		else:
+			sys.exit(0)
+
 	sqlite.close()
 	db.close()
 
