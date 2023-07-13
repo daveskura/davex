@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "davex"
-version = "2.1.7"
+version = "2.1.8"
 dependencies = [
 	'querychart_package >= 2.0.3',
   'schemawizard_package >= 2.5.1',
