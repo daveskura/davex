@@ -14,7 +14,7 @@ from querychart_package.querychart import charter
 import readchar
 
 import logging
-from davex import help
+from davex import help,supported_types
 import sys
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +25,7 @@ def main():
 	sqlite = sqlite_db()
 	sqlite.connect()
 	db = None # postgres_db() or mysql_db() 
-	db, dbtype, cache_prefix = cacheinstancemgr(sqlite).ask_for_instance()
+	dbversion, db, dbtype, cache_prefix = cacheinstancemgr(sqlite).ask_for_instance()
 	
 	selectchar = 'this'
 	while selectchar != '\r':
@@ -117,7 +117,7 @@ class cacheinstancemgr():
 		data = self.sqlite.query(sql)
 		for row in data:
 			instance_name = row[0]
-			dbtype = SimpleAnalysis.dbtype(int(row[1]))
+			dbtype = supported_types.dbtype(int(row[1]))
 			databasetype = row[2]
 			break
 
@@ -176,28 +176,28 @@ class cacheinstancemgr():
 			print('')
 			db = None
 			if selectchar.upper() == '1':
-				dbtype = SimpleAnalysis.dbtype.Postgres
+				dbtype = supported_types.dbtype.Postgres
 			elif selectchar.upper() == '2':
-				dbtype = SimpleAnalysis.dbtype.MySQL
+				dbtype = supported_types.dbtype.MySQL
 			else:
 				sys.exit(0)
 
 			self.add_instance(dbtype,cache_instance)
 
-		if dbtype == SimpleAnalysis.dbtype.Postgres:
+		if dbtype == supported_types.dbtype.Postgres:
 			db = postgres_db(cache_instance) 
-		elif dbtype == SimpleAnalysis.dbtype.MySQL:
+		elif dbtype == supported_types.dbtype.MySQL:
 			db = mysql_db(cache_instance)
 		else:
 			sys.exit(0)
 
-
 		db.connect()
 
+		dbversion = db.queryone('SELECT VERSION()')
 		# cache prefix has an underscore after it
 		cache_prefix = cache_instance + '_'
 
-		return db, dbtype, cache_prefix 
+		return dbversion, db, dbtype, cache_prefix 
 
 def showmenu(dbname,pcache_prefix='',selected_schema='',selected_table=''):
 	print('')
@@ -243,9 +243,9 @@ def BuildShow_tableprofile(cache_db,cache_prefix,databasetype,selected_schema,se
 		rebuildmetrics = True
 
 	if rebuildmetrics:
-		if databasetype == SimpleAnalysis.dbtype.MySQL:
+		if databasetype == supported_types.dbtype.MySQL:
 			actor = MySQL_runner(cache_prefix,selected_schema,selected_table)
-		elif databasetype == SimpleAnalysis.dbtype.Postgres:
+		elif databasetype == supported_types.dbtype.Postgres:
 			actor = Postgres_runner(cache_prefix,selected_schema,selected_table)
 
 	sql = """
@@ -370,12 +370,12 @@ def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema
 			print('Cache table ' + cache_tblcounts_tablename + " may not exist yet.  Try build cache first")
 
 	else:
-		if databasetype == SimpleAnalysis.dbtype.MySQL:
+		if databasetype == supported_types.dbtype.MySQL:
 			sql = """
 				SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
 				WHERE table_schema not in ('performance_schema','sys','information_schema')
 			"""
-		elif databasetype == SimpleAnalysis.dbtype.Postgres:
+		elif databasetype == supported_types.dbtype.Postgres:
 			sql = """
 				SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
 				WHERE table_schema not in ('pg_catalog','information_schema')
@@ -434,7 +434,7 @@ def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False)
 			print("Cache table " + cache_schemas_tablename + " may not exist yet.  Try build cache first")
 
 	else:
-		if databasetype == SimpleAnalysis.dbtype.MySQL:
+		if databasetype == supported_types.dbtype.MySQL:
 			sql = """
 				SELECT
 					DENSE_RANK() OVER (ORDER BY table_schema) as nbr
@@ -445,7 +445,7 @@ def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False)
 				)L
 				ORDER BY table_schema
 			"""
-		elif databasetype == SimpleAnalysis.dbtype.Postgres:
+		elif databasetype == supported_types.dbtype.Postgres:
 			sql = """
 				SELECT
 						DENSE_RANK() OVER (ORDER BY table_schema) as nbr

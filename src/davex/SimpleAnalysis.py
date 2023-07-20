@@ -11,33 +11,26 @@ from sqlitedave_package.sqlitedave import sqlite_db
 from postgresdave_package.postgresdave import postgres_db 
 from mysqldave_package.mysqldave import mysql_db 
 from schemawizard_package.schemawizard import schemawiz
+import supported_types
 
 import logging
 import sys
 
-from enum import Enum
-
-class dbtype(Enum):
-	nodb		= 0
-	Postgres= 1
-	MySQL		= 2
-	SQLite	= 3
-
 class runner():
-	def __init__(self,databasetype=dbtype.nodb,pcache_prefix='',schemaname='',):
+	def __init__(self,databasetype=supported_types.dbtype.nodb,pcache_prefix='',schemaname='',):
 		self.sqlite = sqlite_db()
 		self.db = None # postgres_db() or mysql_db()
 		cache_prefix = ''
 
-		if databasetype == dbtype.nodb:
+		if databasetype == supported_types.dbtype.nodb:
 			print('Which database do you want to analyze ?')
 			print('1. Postgres')
 			print('2. MySQL')
 			selectchar = input('select (1,2): ') or 'x'
 			if selectchar.upper() == '1':
-				databasetype = dbtype.Postgres
+				databasetype = supported_types.dbtype.Postgres
 			elif selectchar.upper() == '2':
-				databasetype = dbtype.MySQL
+				databasetype = supported_types.dbtype.MySQL
 			else:
 				sys.exit(0)
 
@@ -62,15 +55,15 @@ class runner():
 			else:
 				self.sqlite.execute("DELETE FROM " + cache_tblcounts_tablename )
 
-		if databasetype == dbtype.Postgres:
+		if databasetype == supported_types.dbtype.Postgres:
 			self.db = postgres_db(cache_prefix.lower().replace('_',''))
-		elif databasetype == dbtype.MySQL:
+		elif databasetype == supported_types.dbtype.MySQL:
 			self.db = mysql_db(cache_prefix.lower().replace('_',''))
 		else:
 			sys.exit(0)
 
 		self.connect()
-		if databasetype == dbtype.Postgres:
+		if databasetype == supported_types.dbtype.Postgres:
 			query_tablecounts = """
 				select table_schema, 
 							 table_name, 
@@ -85,7 +78,7 @@ class runner():
 			else:
 				query_tablecounts += "where table_schema = '" + schemaname + "' ) t; "
 
-		elif databasetype == dbtype.MySQL:
+		elif databasetype == supported_types.dbtype.MySQL:
 			query_tablecounts = """
 				SELECT table_schema,table_name,table_rows as counts
 				FROM information_Schema.tables
@@ -95,14 +88,14 @@ class runner():
 			else:
 				query_tablecounts += " WHERE table_schema = '" + schemaname + "'; "
 
-		if databasetype == dbtype.Postgres:
+		if databasetype == supported_types.dbtype.Postgres:
 			query_schemacounts = """
 				select table_schema, count(*) as counts
 				from information_schema.tables
 				WHERE table_schema not in ('pg_catalog','information_schema') 
 				group by table_schema 
 			"""
-		elif databasetype == dbtype.MySQL:
+		elif databasetype == supported_types.dbtype.MySQL:
 			query_schemacounts = """
 				SELECT table_schema,count(*) as counts
 				FROM information_Schema.tables 
