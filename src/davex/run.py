@@ -7,14 +7,14 @@ from mysqldave_package.mysqldave import mysql_db
 
 from davex.PostgresTableAnalysis import runner as Postgres_runner
 from davex.MySQLTableAnalysis import runner as MySQL_runner
-import davex.SimpleAnalysis as SimpleAnalysis
+from davex import help,supported_types,SimpleAnalysis
 
 from querychart_package.querychart import charter
 
 import readchar
 
 import logging
-from davex import help,supported_types
+
 import sys
 
 logging.basicConfig(level=logging.INFO)
@@ -31,26 +31,28 @@ def main():
 	while selectchar != '\r':
 		showmenu(dbtype.name,cache_prefix,selected_schema,selected_table)
 		selectchar = readchar.readchar()
-		print('')
+
 		if selectchar.upper() == '0':
 			selected_schema, selected_table = Show_cache(sqlite,cache_prefix)
 
 		elif selectchar.upper() == '1':
 			selected_table = ''
-			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,False)
+			selected_schema = Show_ListSelectSchemas(dbversion,db,sqlite,cache_prefix,dbtype,False)
 
 		elif selectchar.upper() == '2':
 			selected_table = ''
-			selected_schema = Show_ListSelectSchemas(db,sqlite,cache_prefix,dbtype,True)
+			selected_schema = Show_ListSelectSchemas(dbversion,db,sqlite,cache_prefix,dbtype,True)
 
 		elif selectchar.upper() == '3':
-			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,False)
+			selected_schema, selected_table = Show_ListSelectTables(dbversion,db,sqlite,cache_prefix,dbtype,selected_schema,False)
 
 		elif selectchar.upper() == '4':
-			selected_schema, selected_table = Show_ListSelectTables(db,sqlite,cache_prefix,dbtype,selected_schema,True)
+			selected_schema, selected_table = Show_ListSelectTables(dbversion,db,sqlite,cache_prefix,dbtype,selected_schema,True)
 
-		elif selectchar.upper() == '5':
+		elif selectchar.strip() == '5':
+			logging.info('count tables - strt')
 			SimpleAnalysis.runner(dbtype,cache_prefix,selected_schema)
+			logging.info('count tables - end')
 
 		elif selectchar.upper() == '6':
 			BuildShow_tableprofile(sqlite,cache_prefix,dbtype,selected_schema,selected_table)
@@ -62,7 +64,7 @@ def main():
 			grapharooyou(cache_prefix,selected_schema,selected_table)
 
 		elif selectchar.upper() == 'x':
-			print('Emptying cache')
+			logging.info('Emptying cache')
 			tables = sqlite.query("	SELECT name FROM sqlite_master WHERE type = 'table'	")
 			for row in tables:
 				sqlite.execute('drop table ' + row[0])
@@ -140,7 +142,7 @@ class cacheinstancemgr():
 		datalines = data.split('\n')
 		linecounter = len(datalines) - 2
 		if linecounter > 0:
-			print('Cache Instances:')
+			logging.info('Cache Instances:')
 			print(data)
 			linecounter = len(datalines) - 2
 			
@@ -193,9 +195,13 @@ class cacheinstancemgr():
 
 		db.connect()
 
-		dbversion = db.queryone('SELECT VERSION()')
+		databaseversion = db.queryone('SELECT VERSION()')
+		dbversion = dbtype.name + ':' + databaseversion
+		print(dbversion) # MySQL:5.6.27-enterprise-commercial-advanced-log
+
 		# cache prefix has an underscore after it
 		cache_prefix = cache_instance + '_'
+
 
 		return dbversion, db, dbtype, cache_prefix 
 
@@ -343,7 +349,9 @@ def Show_cache(cache_db,cache_prefix):
 
 	return selected_schema, selected_table
 
-def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema,usecache=False):
+def Show_ListSelectTables(dbversion,db,cache_db,cache_prefix,databasetype,suggested_schema,usecache=False):
+	major_db_version = dbversion.split(':')[1].split('.')[0]
+
 	cache_tblcounts_tablename = cache_prefix + "table_counts"
 	selected_schema = ''
 	selected_table = ''
@@ -371,10 +379,23 @@ def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema
 
 	else:
 		if databasetype == supported_types.dbtype.MySQL:
-			sql = """
-				SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
-				WHERE table_schema not in ('performance_schema','sys','information_schema')
-			"""
+			if int(major_db_version) < 8:
+				sql = """
+					SELECT
+							(@row_number:=@row_number + 1) AS nbr
+							,table_schema,table_name 
+					FROM (
+							SELECT DISTINCT table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
+							) L,
+							(SELECT @row_number := 0) x
+					WHERE table_schema not in ('performance_schema','sys','information_schema')
+
+				"""
+			else:
+				sql = """
+					SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
+					WHERE table_schema not in ('performance_schema','sys','information_schema')
+				"""
 		elif databasetype == supported_types.dbtype.Postgres:
 			sql = """
 				SELECT DENSE_RANK() OVER (ORDER BY table_schema,table_name) as nbr,table_schema,table_name FROM INFORMATION_SCHEMA.TABLES
@@ -384,27 +405,26 @@ def Show_ListSelectTables(db,cache_db,cache_prefix,databasetype,suggested_schema
 		sql += " AND table_schema like '%" + suggested_schema + "%' "				
 		sql += ' ORDER BY table_schema,table_name'
 			
-		try:
-			data = db.export_query_to_str(sql,'\t')
-
-			print(data)
-			tableselecter = input('Select Table (nbr): ') or '\r'
-			if tableselecter != '\r':
-				datalines = data.split('\n')
-				for row in datalines:
-					flds = row.split('\t')
-					if flds[0] == tableselecter:
+		data = db.export_query_to_str(sql,'\t')
+		print(data)
+		tableselecter = input('Select Table (nbr): ') or '\r'
+		if tableselecter != '\r':
+			datalines = data.split('\n')
+			for row in datalines:
+				flds = row.split('\t')
+				if flds[0] != 'nbr' and flds[0] != '':
+					if float(flds[0]) == float(tableselecter):
 						selected_schema = flds[1]
 						selected_table = flds[2]
 
-			if selected_table != '':
-				print(selected_schema + '.' + selected_table + ' selected.')
-		except:
-			data = '\t\n'
+		if selected_table != '':
+			print(selected_schema + '.' + selected_table + ' selected.')
 
 	return selected_schema, selected_table
 
-def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False):
+def Show_ListSelectSchemas(dbversion,db,cache_db,cache_prefix,databasetype,usecache=False):
+	major_db_version = dbversion.split(':')[1].split('.')[0]
+	#print('major_db_version: ' + str(major_db_version)) 
 	cache_schemas_tablename = cache_prefix + "schemas"
 	selected_schema = ''
 	
@@ -435,16 +455,29 @@ def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False)
 
 	else:
 		if databasetype == supported_types.dbtype.MySQL:
-			sql = """
-				SELECT
-					DENSE_RANK() OVER (ORDER BY table_schema) as nbr
-					,L.*
-				FROM (
-					SELECT DISTINCT table_schema FROM INFORMATION_SCHEMA.TABLES
-					WHERE table_schema not in ('performance_schema','sys','information_schema')
-				)L
-				ORDER BY table_schema
-			"""
+			if int(major_db_version) < 8:
+				sql = """
+					SELECT
+							(@row_number:=@row_number + 1) AS nbr
+							,L.*
+					FROM (
+							SELECT DISTINCT table_schema FROM INFORMATION_SCHEMA.TABLES
+							WHERE table_schema not in ('performance_schema','sys','information_schema')
+							) L,
+							(SELECT @row_number := 0) x
+					ORDER BY table_schema;
+				"""
+			else:
+				sql = """
+					SELECT
+						DENSE_RANK() OVER (ORDER BY table_schema) as nbr
+						,L.*
+					FROM (
+						SELECT DISTINCT table_schema FROM INFORMATION_SCHEMA.TABLES
+						WHERE table_schema not in ('performance_schema','sys','information_schema')
+					)L
+					ORDER BY table_schema
+				"""
 		elif databasetype == supported_types.dbtype.Postgres:
 			sql = """
 				SELECT
@@ -456,6 +489,9 @@ def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False)
 				)L
 				ORDER BY table_schema
 			"""
+		#print(sql)
+		
+		#data = db.query(sql)
 		data = db.export_query_to_str(sql,'\t')
 		print(data)
 		datalines = data.split('\n')
@@ -470,9 +506,10 @@ def Show_ListSelectSchemas(db,cache_db,cache_prefix,databasetype,usecache=False)
 		if insideselectchar != '\r':
 			for row in datalines:
 				flds = row.split('\t')
-				if flds[0].lower() == insideselectchar.lower():
-					selected_schema = flds[1]
-					print('You selected ' + selected_schema)
+				if flds[0] != 'nbr' and flds[0] != '':
+					if float(flds[0]) == float(insideselectchar):
+						selected_schema = flds[1]
+						print('You selected ' + selected_schema)
 		print('')
 	return selected_schema
 

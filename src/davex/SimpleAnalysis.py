@@ -11,13 +11,14 @@ from sqlitedave_package.sqlitedave import sqlite_db
 from postgresdave_package.postgresdave import postgres_db 
 from mysqldave_package.mysqldave import mysql_db 
 from schemawizard_package.schemawizard import schemawiz
-import supported_types
+from davex import supported_types
 
 import logging
 import sys
 
 class runner():
-	def __init__(self,databasetype=supported_types.dbtype.nodb,pcache_prefix='',schemaname='',):
+	def __init__(self,databasetype=supported_types.dbtype.nodb,pcache_prefix='',schemaname=''):
+		logging.info('here')
 		self.sqlite = sqlite_db()
 		self.db = None # postgres_db() or mysql_db()
 		cache_prefix = ''
@@ -40,29 +41,41 @@ class runner():
 		else:
 			if pcache_prefix !='':
 				cache_prefix = pcache_prefix 
+		logging.info('here1')
 
 		cache_schemas_tablename = cache_prefix.lower() + "schemas"
 		cache_tblcounts_tablename = cache_prefix.lower() + "table_counts"
+		logging.info('here2')
 		if self.sqlite.does_table_exist(cache_schemas_tablename): 
 			if schemaname != '':
 				self.sqlite.execute("DELETE FROM " + cache_schemas_tablename + " WHERE upper(table_schema) = upper('" + schemaname + "')")
 			else:
 				self.sqlite.execute("DELETE FROM " + cache_schemas_tablename )
 
+		logging.info('here3')
 		if self.sqlite.does_table_exist(cache_tblcounts_tablename): 
 			if schemaname != '':
 				self.sqlite.execute("DELETE FROM " + cache_tblcounts_tablename + " WHERE upper(table_schema) = upper('" + schemaname + "')")
 			else:
 				self.sqlite.execute("DELETE FROM " + cache_tblcounts_tablename )
 
+		logging.info('here4')
+		logging.info(databasetype)
+		logging.info((databasetype == supported_types.dbtype.MySQL))
+
 		if databasetype == supported_types.dbtype.Postgres:
 			self.db = postgres_db(cache_prefix.lower().replace('_',''))
 		elif databasetype == supported_types.dbtype.MySQL:
+			logging.info('here4.1')
+			logging.info(cache_prefix.lower().replace('_',''))
+			logging.info('here4.2')
 			self.db = mysql_db(cache_prefix.lower().replace('_',''))
+			logging.info('here4.3')
 		else:
 			sys.exit(0)
 
 		self.connect()
+		logging.info('here5')
 		if databasetype == supported_types.dbtype.Postgres:
 			query_tablecounts = """
 				select table_schema, 
@@ -79,6 +92,7 @@ class runner():
 				query_tablecounts += "where table_schema = '" + schemaname + "' ) t; "
 
 		elif databasetype == supported_types.dbtype.MySQL:
+			logging.info('there')
 			query_tablecounts = """
 				SELECT table_schema,table_name,table_rows as counts
 				FROM information_Schema.tables
@@ -161,4 +175,4 @@ if __name__ == '__main__':
 	logging.basicConfig(level=logging.INFO)
 	logging.info(" Starting Simple Analysis") # 
 
-	runner()
+	runner(supported_types.dbtype.nodb,'demo','dm_appraisal')
